@@ -2,55 +2,43 @@
 
 const printReceipt = tags=> {
 
-
-
     let goods_list = countTags(tags)
     let goods_base_info = getGoodsBaseInfo(goods_list)
     let goods_discount_info = getGoodsDiscountInfo(goods_base_info)
     let result = calculateCosts(goods_discount_info)
     console.log(result)
+
 }
-
-
-
-
-
-
 
 
 const countTags = tags => {
     let result = []
     for(let tag of tags) {
-        let st = []
-        if(tag.indexOf('-') != -1) {
-            st = tag.split('-')
-             let object = findObject(st[0],result)
-             if(object != null) {
-                 object.count = parseFloat(object.count) + parseFloat(st[1])
-                 continue
-             }
-            result.push({
-                'barcode': st[0],
-                'count': parseFloat(st[1]).toFixed(1)
-            })
-            continue
-        }
-        let object = findObject(tag,result)
-        if(object != null) {
-            object.count++
-        }else {
-            result.push({
-                'barcode': tag,
-                'count': 1
-            })
-        } 
+        let goods = parseBarcode(tag)
+        let object = findObject(goods,result)
+        object !== null ? object.count += goods.count : result.push(goods)
     }
     return result
 }
 
-const findObject = (tag,result) => {
+const parseBarcode = tag => {
+    let goodsBarcode = tag.split('-')
+    return goodsBarcode.length > 1 
+    ? 
+    {
+        barcode: goodsBarcode[0],
+        count: parseFloat(goodsBarcode[1])
+    }
+    :
+    {
+        barcode:goodsBarcode[0],
+        count: 1
+    }
+}
+
+const findObject = (goods,result) => {
     for(let object of result) {
-        if(object.barcode === tag) {
+        if(object.barcode === goods.barcode) {
             return object
         }
     }
@@ -69,8 +57,7 @@ const getGoodsBaseInfo = goods_list => {
                      name: aItem.name,
                      unit: aItem.unit,
                     price: aItem.price,
-                    count: aGoods.count,
-                    discount: null
+                    count: aGoods.count
                 })
                 break;
             }
@@ -80,13 +67,18 @@ const getGoodsBaseInfo = goods_list => {
 }
 
 const getGoodsDiscountInfo = goods_base_info => {
+    let result = goods_base_info
     let allPromotions = loadPromotions()
-    for(let aGoods of goods_base_info) {
-        if(allPromotions[0].barcodes.indexOf(aGoods.barcode) !== -1){
-            aGoods.discount = allPromotions.type
+    for(let aGoods of result) {
+        for(let promotion of allPromotions) {
+            if(promotion.barcodes.indexOf(aGoods.barcode) !== -1) {
+                aGoods.discount = promotion.type
+                break
+            }
+            aGoods.discount = null
         }
     }
-    return goods_base_info
+    return result
 }
 
 
@@ -96,20 +88,25 @@ const calculateCosts = goods_discount_info => {
     let total = 0
     for(let aGoods of goods_discount_info) {
         let aGoodsCost = 0
-        let aPrint = ''
         if(aGoods.discount === null) {
             aGoodsCost = aGoods.count * aGoods.price
-        } else {
+        } else if(aGoods.discount === 'BUY_TWO_GET_ONE_FREE') {
             if(aGoods.count >= 2) {
                 reduce += aGoods.price
                 aGoodsCost = (aGoods.count-1) * aGoods.price
             }
         }
         total += aGoodsCost
-        aPrint = '名称：' + aGoods.name+'，' + '数量：'+ aGoods.count + aGoods.unit +'，'+ 
-        '单价：' + parseFloat(aGoods.price).toFixed(2) + '(元)，'+ '小计：' + parseFloat(aGoodsCost).toFixed(2) +'(元)'+'\n'
+        let aPrint = '名称：' + aGoods.name+'，' 
+               + '数量：'+ aGoods.count + aGoods.unit +'，'
+               + '单价：' + parseFloat(aGoods.price).toFixed(2) + '(元)，'
+               + '小计：' + parseFloat(aGoodsCost).toFixed(2) +'(元)'+'\n'
         result += aPrint
     }
-    result = result +'----------------------'+'\n' + '总计：'+ parseFloat(total).toFixed(2) + '(元)'+'\n' +'节省：' + parseFloat(reduce).toFixed(2) + '(元)' +'\n'+'**********************'
+    result = result 
+           +'----------------------'+'\n' 
+           + '总计：'+ parseFloat(total).toFixed(2) + '(元)'+'\n' 
+           +'节省：' + parseFloat(reduce).toFixed(2) + '(元)' 
+           +'\n'+'**********************'
     return result
 }
