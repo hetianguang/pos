@@ -87,20 +87,13 @@ const calculateCosts = goods_discount_info => {
     let reduce = 0
     let total = 0
     for(let aGoods of goods_discount_info) {
-        let aGoodsCost = 0
-        if(aGoods.discount === null) {
-            aGoodsCost = aGoods.count * aGoods.price
-        } else if(aGoods.discount === 'BUY_TWO_GET_ONE_FREE') {
-            if(aGoods.count >= 2) {
-                reduce += aGoods.price
-                aGoodsCost = (aGoods.count-1) * aGoods.price
-            }
-        }
-        total += aGoodsCost
+        let aGoodsCost = calculateAgoodsCosts(aGoods)
+        total += aGoodsCost.costs
+        reduce += aGoodsCost.reduce
         let aPrint = '名称：' + aGoods.name+'，' 
-               + '数量：'+ aGoods.count + aGoods.unit +'，'
-               + '单价：' + parseFloat(aGoods.price).toFixed(2) + '(元)，'
-               + '小计：' + parseFloat(aGoodsCost).toFixed(2) +'(元)'+'\n'
+                   + '数量：'+ aGoods.count + aGoods.unit +'，'
+                   + '单价：' + parseFloat(aGoods.price).toFixed(2) + '(元)，'
+                   + '小计：' + parseFloat(aGoodsCost.costs).toFixed(2) +'(元)'+'\n'
         result += aPrint
     }
     result = result 
@@ -109,4 +102,22 @@ const calculateCosts = goods_discount_info => {
            +'节省：' + parseFloat(reduce).toFixed(2) + '(元)' 
            +'\n'+'**********************'
     return result
+}
+
+const calculateAgoodsCosts = aGoods => {
+    let aGoodsCost = {
+        costs: 0,
+        reduce: 0
+    }
+    if(aGoods.discount === null) {
+        aGoodsCost.costs = aGoods.count * aGoods.price
+    } else if(aGoods.discount === 'BUY_TWO_GET_ONE_FREE') {
+        if(aGoods.count >= 2) {
+            aGoodsCost.reduce = aGoods.price
+            aGoodsCost.costs = (aGoods.count-1) * aGoods.price
+        }
+    }
+    
+   return aGoodsCost
+
 }
